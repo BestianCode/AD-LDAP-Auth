@@ -2,8 +2,9 @@
 
     use Net::LDAP;
 
+
 $user		= 'UserName';
-$password	= 'Password';
+$password	= 'pAssw0rD';
 $host		= 'ADDomainControllerIPorName';
 $domain		= 'DomainName';
 $basedn		= 'DC=google,DC=com';
@@ -11,35 +12,13 @@ $group		= 'internet_users';
 
 $check_group	= "1"; # 1 - Yes, 0 - No
 
-$ldap		= Net::LDAP->new($host.".".$domain) or die "$@";
-$mesg		= $ldap->bind( "$user\@$domain" ,password => "$password", version => 3) or die "$@";
+$result = xldap_auth($host, $domain, $basedn, $user, $password);
 
-$userdn		= xldap_get_dn($ldap,$basedn,$user);
-
-if ($userdn =~ /CN/){
-    if ($check_group eq 1){
-	$groupdn	= xldap_get_dn($ldap,$basedn,$group);
-
-	$result		= xldap_user_group_check($ldap, $userdn, $groupdn,1);
-
-	if ($result eq 1){
-	    print "Ok\n";
-	}else{
-	    $result		= xldap_user_group_check($ldap, $userdn, $groupdn, 16);
-	    if ($result eq 1){
-		print "Ok\n";
-	    }else{
-		print "Error member\n";
-	    }
-	}
-    }else{
-	    print "Ok\n";
-    }
+if ($result eq 1){
+    print "OK\n";
 }else{
-    print "Error get DN\n";
+    print "ERR\n";
 }
-
-$mesg		= $ldap->unbind;
 
 exit;
 
@@ -84,3 +63,36 @@ sub xldap_user_group_check{
     return 0;
 }
 
+sub xldap_auth(){
+    my($ad_host, $domain, $basedn, $user, $password) = (shift, shift, shift, shift, shift);
+
+    if ($ldap) {
+	$mesg	= $ldap->unbind;
+    }
+
+    $ldap	= Net::LDAP->new($ad_host.".".$domain) or die "$@";
+    $mesg	= $ldap->bind( "$user\@$domain" ,password => "$password", version => 3) or die "$@";
+
+    $userdn		= xldap_get_dn($ldap,$basedn,$user);
+
+	if ($userdn =~ /CN/){
+	    if ($check_group eq 1){
+		$groupdn	= xldap_get_dn($ldap,$basedn,$group);
+		$result		= xldap_user_group_check($ldap, $userdn, $groupdn,1);
+		if ($result eq 1){
+		    return 1
+		}else{
+		    $result		= xldap_user_group_check($ldap, $userdn, $groupdn, 16);
+		    if ($result eq 1){
+			return 1
+		    }else{
+			return -1
+		    }
+		}
+	    }else{
+		return 1
+	    }
+	}else{
+		return -1
+	}
+}

@@ -92,4 +92,3 @@ function xldap_user_group_check($ldap, $userdn, $groupdn, $recurs_count=16) {
 }
 
 ?>
-
